@@ -10,7 +10,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <org.jooq.version>3.13.1</org.jooq.version>
+        <org.jooq.version>3.13.4</org.jooq.version>
         <db.url>jdbc:h2:~/mcve</db.url>
         <db.username>sa</db.username>
         <db.password></db.password>

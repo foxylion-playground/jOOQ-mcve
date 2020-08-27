@@ -40,45 +40,34 @@ package org.jooq.mcve.test;
 import static org.jooq.mcve.Tables.TEST;
 import static org.junit.Assert.assertEquals;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-
 import org.jooq.DSLContext;
+import org.jooq.Query;
+import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
-import org.jooq.mcve.tables.records.TestRecord;
-
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 
 public class MCVETest {
 
-    Connection connection;
-    DSLContext ctx;
+    private final DSLContext ctx = DSL.using(SQLDialect.POSTGRES);
 
-    @Before
-    public void setup() throws Exception {
-        connection = DriverManager.getConnection("jdbc:h2:~/mcve", "sa", "");
-        ctx = DSL.using(connection);
-    }
+    private final Query query = ctx.select(TEST.ID)
+            .from(TEST)
+            .where(TEST.VALUE.isFalse())
+            .and(TEST.ID.eq(42));
 
-    @After
-    public void after() throws Exception {
-        ctx = null;
-        connection.close();
-        connection = null;
+    @Test
+    public void brokenWithExtractParams() {
+        long namedParametersInSql = ctx.renderNamedParams(query).chars().filter(ch -> ch == ':').count();
+        long namedParametersByExtractParams = ctx.extractParams(query).size();
+
+        assertEquals(namedParametersInSql, namedParametersByExtractParams);
     }
 
     @Test
-    public void mcveTest() {
-        TestRecord result =
-        ctx.insertInto(TEST)
-           .columns(TEST.VALUE)
-           .values(42)
-           .returning(TEST.ID)
-           .fetchOne();
+    public void worksWithBindValues() {
+        long namedParametersInSql = ctx.render(query).chars().filter(ch -> ch == '?').count();
+        long namedParametersByExtractBindValues = ctx.extractBindValues(query).size();
 
-        result.refresh();
-        assertEquals(42, (int) result.getValue());
+        assertEquals(namedParametersInSql, namedParametersByExtractBindValues);
     }
 }
